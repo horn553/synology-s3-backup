@@ -1,0 +1,16 @@
+# AWS Settings
+AWS_PROFILE="nas-backup"
+AWS_REGION="ap-northeast-1"
+S3_BUCKET="my-nas-backup-bucket"
+S3_PREFIX="synology-backup"
+
+# Backup Settings
+BACKUP_SOURCE="/var/services/homes"
+TEMP_DIR="/volume1/backup-temp"
+LOG_DIR="/volume1/backup-config/logs"
+LOG_RETENTION_DAYS=30
+COMPRESSION_LEVEL="6"        # 1-9 (1=fast, 9=best)
+MIN_FREE_SPACE_GB="1500"
+
+# GitHub Settings
+GITHUB_REPO="username/synology-s3-backup"
