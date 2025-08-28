@@ -40,8 +40,7 @@ load_config() {
 
 ensure_aws_cli() {
     if ! $DOCKER_CMD images amazon/aws-cli --quiet | grep -q .; then
-        info "Pulling AWS CLI Docker image..."
-        $DOCKER_CMD pull amazon/aws-cli
+        error "AWS CLI Docker image not found. Please pull the image first: $DOCKER_CMD pull amazon/aws-cli"
     fi
 }
 
@@ -196,27 +195,20 @@ backup_command() {
     # Verify setup first
     verify_setup
     
-    # Check free space
+    # Check free space (minimal space needed for streaming)
     local free_space_gb=$(df -BG "$TEMP_DIR" | awk 'NR==2 {print $4}' | sed 's/G//')
-    if [[ $free_space_gb -lt $MIN_FREE_SPACE_GB ]]; then
-        error "Insufficient free space: ${free_space_gb}GB < ${MIN_FREE_SPACE_GB}GB"
+    local min_streaming_space=5  # Minimal space for streaming operations
+    if [[ $free_space_gb -lt $min_streaming_space ]]; then
+        error "Insufficient free space for streaming: ${free_space_gb}GB < ${min_streaming_space}GB"
     fi
     
-    # Create backup
-    local backup_file="${TEMP_DIR}/backup-${timestamp}.tar.gz"
-    info "Creating backup archive..."
-    tar -czf "$backup_file" -C / "${BACKUP_SOURCE#/}" --gzip-level=$COMPRESSION_LEVEL
+    # Create and upload backup in one stream
+    info "Creating and uploading backup archive..."
+    tar -cz -C / "${BACKUP_SOURCE#/}" --gzip-level=$COMPRESSION_LEVEL | \
+        aws_cli s3 cp - "s3://${S3_BUCKET}/${S3_PREFIX}/backup-${timestamp}.tar.gz" \
+            --storage-class DEEP_ARCHIVE
     
-    local backup_size=$(ls -lh "$backup_file" | awk '{print $5}')
-    info "Backup created: $backup_file ($backup_size)"
-    
-    # Upload to S3
-    info "Uploading to S3..."
-    aws_cli s3 cp "$backup_file" "s3://${S3_BUCKET}/${S3_PREFIX}/backup-${timestamp}.tar.gz" \
-        --storage-class DEEP_ARCHIVE
-    
-    # Cleanup
-    rm -f "$backup_file"
+    info "Backup uploaded: s3://${S3_BUCKET}/${S3_PREFIX}/backup-${timestamp}.tar.gz"
     
     # Rotate logs
     find "$LOG_DIR" -name "backup-*.log" -mtime +$LOG_RETENTION_DAYS -delete
