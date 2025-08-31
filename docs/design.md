@@ -37,7 +37,7 @@ synology-nas-backup/
 
 ### 1. init - 初期設定
 ```bash
-curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backup.sh | bash -s -- init
+curl -s https://raw.githubusercontent.com/horn553/synology-s3-backup/production/scripts/backup.sh | bash -s -- init
 ```
 **機能**:
 - 設定ファイル作成/更新（対話式）
@@ -49,7 +49,7 @@ curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backu
 
 ### 2. backup - バックアップ実行
 ```bash
-curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backup.sh | bash -s -- backup
+curl -s https://raw.githubusercontent.com/horn553/synology-s3-backup/production/scripts/backup.sh | bash -s -- backup
 ```
 **処理フロー**:
 1. 自動検証（verify）
@@ -65,7 +65,7 @@ curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backu
 
 ### 3. restore - リストア
 ```bash
-curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backup.sh | bash -s -- restore [YYYYMMDD-HHMMSS]
+curl -s https://raw.githubusercontent.com/horn553/synology-s3-backup/production/scripts/backup.sh | bash -s -- restore [YYYYMMDD-HHMMSS]
 ```
 **機能**:
 - バックアップ一覧表示
@@ -168,7 +168,7 @@ docker run --rm \
 ### docs/cron.md
 ```bash
 # 3ヶ月ごとの実行例（1,4,7,10月の第1日曜日 深夜2時）
-0 2 1-7 1,4,7,10 * [ $(date +\%w) -eq 0 ] && curl -s https://raw.githubusercontent.com/{GITHUB_REPO}/production/scripts/backup.sh | bash -s -- backup
+0 2 1-7 1,4,7,10 * [ $(date +\%w) -eq 0 ] && curl -s https://raw.githubusercontent.com/horn553/synology-s3-backup/production/scripts/backup.sh | bash -s -- backup
 ```
 
 ## 実装時の注意事項
