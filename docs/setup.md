@@ -25,35 +25,42 @@
 
 ```json
 {
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:CreateBucket",
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket",
-        "s3:DeleteObject",
-        "s3:PutBucketLifecycleConfiguration",
-        "s3:GetBucketLifecycleConfiguration"
-      ],
-      "Resource": [
-        "arn:aws:s3:::*-nas-backup-*",
-        "arn:aws:s3:::*-nas-backup-*/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:RestoreObject"],
-      "Resource": "arn:aws:s3:::*-nas-backup-*/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["s3:ListAllMyBuckets"],
-      "Resource": "*"
-    }
-  ]
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "VisualEditor0",
+			"Effect": "Allow",
+			"Action": [
+				"s3:GetLifecycleConfiguration",
+				"s3:PutLifecycleConfiguration",
+				"s3:CreateBucket",
+				"s3:ListBucket"
+			],
+			"Resource": "arn:aws:s3:::*-nas-backup-*"
+		},
+		{
+			"Sid": "VisualEditor1",
+			"Effect": "Allow",
+			"Action": [
+				"s3:PutObject",
+				"s3:GetObject",
+				"s3:DeleteObject"
+			],
+			"Resource": "arn:aws:s3:::*-nas-backup-*/*"
+		},
+		{
+			"Sid": "VisualEditor2",
+			"Effect": "Allow",
+			"Action": "s3:RestoreObject",
+			"Resource": "arn:aws:s3:::*-nas-backup-*/*"
+		},
+		{
+			"Sid": "VisualEditor3",
+			"Effect": "Allow",
+			"Action": "s3:ListAllMyBuckets",
+			"Resource": "*"
+		}
+	]
 }
 ```
 
