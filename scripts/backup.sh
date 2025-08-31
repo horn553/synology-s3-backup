@@ -3,7 +3,7 @@
 set -euo pipefail
 
 readonly SCRIPT_VERSION="1.0.0"
-readonly CONFIG_DIR="/volume1/backup-config"
+readonly CONFIG_DIR="~/backup-config"
 readonly CONFIG_FILE="${CONFIG_DIR}/backup.conf"
 readonly LOG_DIR="${CONFIG_DIR}/logs"
 readonly AWS_DIR="${HOME}/.aws"
