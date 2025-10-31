@@ -12,5 +12,11 @@ LOG_RETENTION_DAYS=30
 COMPRESSION_LEVEL="6"        # 1-9 (1=fast, 9=best)
 MIN_FREE_SPACE_GB="1500"
 
+# Directory exclusion patterns (absolute paths or glob patterns)
+EXCLUDE_DIRECTORIES=(
+    # "/var/services/homes/cache"
+    # "@eaDir"
+)
+
 # GitHub Settings
 GITHUB_REPO="username/synology-s3-backup"

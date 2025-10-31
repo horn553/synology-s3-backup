@@ -9,6 +9,8 @@ readonly LOG_DIR="${CONFIG_DIR}/logs"
 readonly AWS_DIR="${HOME}/.aws"
 readonly DOCKER_CMD="/usr/local/bin/docker"
 
+declare -a tar_exclude_args=()
+
 log() {
     local level=$1
     shift
@@ -36,6 +38,13 @@ load_config() {
     MIN_FREE_SPACE_GB=${MIN_FREE_SPACE_GB:-1500}
     LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
     TEMP_DIR=${TEMP_DIR:-/volume1/backup-temp}
+
+    if ! declare -p EXCLUDE_DIRECTORIES &>/dev/null; then
+        EXCLUDE_DIRECTORIES=()
+    elif [[ $(declare -p EXCLUDE_DIRECTORIES 2>/dev/null) != declare\ -a* ]]; then
+        # Allow space-separated strings to be converted into an array for backward compatibility.
+        read -r -a EXCLUDE_DIRECTORIES <<< "$EXCLUDE_DIRECTORIES"
+    fi
 }
 
 ensure_aws_cli() {
@@ -50,6 +59,45 @@ aws_cli() {
         -v "/volume1:/volume1" \
         -e AWS_PROFILE="${AWS_PROFILE}" \
         amazon/aws-cli "$@"
+}
+
+build_tar_exclude_args() {
+    tar_exclude_args=()
+
+    if ! declare -p EXCLUDE_DIRECTORIES &>/dev/null; then
+        return
+    fi
+
+    local base="${BACKUP_SOURCE#/}"
+
+    for entry in "${EXCLUDE_DIRECTORIES[@]}"; do
+        [[ -z "$entry" ]] && continue
+
+        if [[ "$entry" == /* ]]; then
+            local normalized="${entry#/}"
+            if [[ "$entry" == *[\*\?\[]* ]]; then
+                tar_exclude_args+=(--exclude="$normalized")
+            else
+                tar_exclude_args+=(--exclude="$normalized" --exclude="$normalized/*")
+            fi
+            continue
+        fi
+
+        if [[ "$entry" == *[\*\?\[]* ]]; then
+            local normalized="$entry"
+            [[ "$normalized" == /* ]] && normalized="${normalized#/}"
+            tar_exclude_args+=(--exclude="$normalized")
+            continue
+        fi
+
+        if [[ "$entry" == */* ]]; then
+            local normalized="${base}/${entry#/}"
+            tar_exclude_args+=(--exclude="$normalized" --exclude="$normalized/*")
+        else
+            tar_exclude_args+=(--exclude="${base}/${entry}" --exclude="${base}/${entry}/*")
+            tar_exclude_args+=(--exclude="*/${entry}" --exclude="*/${entry}/*")
+        fi
+    done
 }
 
 init_command() {
@@ -75,6 +123,12 @@ LOG_DIR="/volume1/backup-config/logs"
 LOG_RETENTION_DAYS=30
 COMPRESSION_LEVEL="6"
 MIN_FREE_SPACE_GB="1500"
+
+# Directory exclusion patterns (absolute paths or glob patterns)
+EXCLUDE_DIRECTORIES=(
+    # "/var/services/homes/cache"
+    # "@eaDir"
+)
 
 # GitHub Settings
 GITHUB_REPO="username/synology-s3-backup"
@@ -202,9 +256,19 @@ backup_command() {
         error "Insufficient free space for streaming: ${free_space_gb}GB < ${min_streaming_space}GB"
     fi
     
+    build_tar_exclude_args
+
+    if [[ ${#EXCLUDE_DIRECTORIES[@]} -gt 0 ]]; then
+        info "Excluding directories: ${EXCLUDE_DIRECTORIES[*]}"
+    fi
+
     # Create and upload backup in one stream
     info "Creating and uploading backup archive..."
-    tar -cz -C / "${BACKUP_SOURCE#/}" --gzip-level=$COMPRESSION_LEVEL | \
+    local tar_cmd=(tar -cz --gzip-level="${COMPRESSION_LEVEL}")
+    tar_cmd+=("${tar_exclude_args[@]}")
+    tar_cmd+=(-C / "${BACKUP_SOURCE#/}")
+
+    "${tar_cmd[@]}" | \
         aws_cli s3 cp - "s3://${S3_BUCKET}/${S3_PREFIX}/backup-${timestamp}.tar.gz" \
             --storage-class DEEP_ARCHIVE
     
