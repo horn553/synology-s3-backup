@@ -5,9 +5,11 @@ set -euo pipefail
 readonly SCRIPT_VERSION="1.0.0"
 readonly CONFIG_DIR="~/backup-config"
 readonly CONFIG_FILE="${CONFIG_DIR}/backup.conf"
-readonly LOG_DIR="${CONFIG_DIR}/logs"
+readonly DEFAULT_LOG_DIR="${CONFIG_DIR}/logs"
 readonly AWS_DIR="${HOME}/.aws"
 readonly DOCKER_CMD="/usr/local/bin/docker"
+
+LOG_DIR="${DEFAULT_LOG_DIR}"
 
 declare -a tar_exclude_args=()
 
@@ -38,6 +40,7 @@ load_config() {
     MIN_FREE_SPACE_GB=${MIN_FREE_SPACE_GB:-1500}
     LOG_RETENTION_DAYS=${LOG_RETENTION_DAYS:-30}
     TEMP_DIR=${TEMP_DIR:-/volume1/backup-temp}
+    LOG_DIR=${LOG_DIR:-$DEFAULT_LOG_DIR}
 
     if ! declare -p EXCLUDE_DIRECTORIES &>/dev/null; then
         EXCLUDE_DIRECTORIES=()
@@ -104,7 +107,7 @@ init_command() {
     info "Starting initialization..."
     
     # Create directories
-    mkdir -p "$CONFIG_DIR" "$LOG_DIR" "$AWS_DIR"
+    mkdir -p "$CONFIG_DIR" "$DEFAULT_LOG_DIR" "$AWS_DIR"
     
     # Create config file if not exists
     if [[ ! -f "$CONFIG_FILE" ]]; then
@@ -139,6 +142,7 @@ EOF
     fi
     
     load_config
+    mkdir -p "$LOG_DIR"
     
     # Configure AWS credentials
     if [[ ! -f "${AWS_DIR}/credentials" ]]; then
